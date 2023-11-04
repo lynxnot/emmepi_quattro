@@ -1,7 +1,7 @@
 //
 use std::{
     fs::File,
-    io::{BufReader, Read, Seek},
+    io::{BufReader, Read},
     process,
 };
 
@@ -20,9 +20,11 @@ impl AtomHeader {
 }
 
 fn main() {
-    println!("Hello, world!");
+    println!("\n** emmepi_quattro **\n");
 
-    let f = File::open("./samples/sample-earth.mp4").unwrap_or_else(|error| {
+    const SAMPLE_FILE: &str = "./samples/sample-earth.mp4";
+    //const SAMPLE_FILE: &str = "./samples/sample-animation.mp4";
+    let f = File::open(SAMPLE_FILE).unwrap_or_else(|error| {
         println!(
             "Cound not open file: ErrorKind::{:?}, {}",
             error.kind(),
@@ -32,17 +34,22 @@ fn main() {
     });
 
     let mut reader = BufReader::new(f);
-    let mut buf = [0; 8];
-    reader
-        .read_exact(&mut buf)
-        .expect("Could not read atom header");
+    let mut header_buf = [0; 8];
+    
+    while let Ok(()) = reader.read_exact(&mut header_buf) {
 
-    let header = AtomHeader::new(&buf);
+        let header = AtomHeader::new(&header_buf);
 
-    println!("size: {}", header.atom_size);
-    println!(
-        "atom_type: {}",
-        String::from_utf8_lossy(&header.atom_type[..])
-    );
-    println!("stream position: {:?}", reader.stream_position().unwrap());
+        println!(
+            "{}: {}",
+            String::from_utf8_lossy(&header.atom_type[..]),
+            header.atom_size
+        );
+
+        if let Err(e) = reader.seek_relative((header.atom_size - 8).into()) {
+            println!("error: {}", e);
+            break;
+        }
+    }
+    
 }
