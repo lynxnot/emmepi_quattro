@@ -5,19 +5,7 @@ use std::{
     process,
 };
 
-struct AtomHeader {
-    atom_size: u32,
-    atom_type: [u8; 4],
-}
-
-impl AtomHeader {
-    fn new(buf: &[u8]) -> AtomHeader {
-        AtomHeader {
-            atom_size: u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]),
-            atom_type: [buf[4], buf[5], buf[6], buf[7]],
-        }
-    }
-}
+use emmepi_quattro::container::mp4::AtomHeader;
 
 fn main() {
     println!("\n** emmepi_quattro **\n");
@@ -35,21 +23,15 @@ fn main() {
 
     let mut reader = BufReader::new(f);
     let mut header_buf = [0; 8];
-    
-    while let Ok(()) = reader.read_exact(&mut header_buf) {
 
+    while let Ok(()) = reader.read_exact(&mut header_buf) {
         let header = AtomHeader::new(&header_buf);
 
-        println!(
-            "{}: {}",
-            String::from_utf8_lossy(&header.atom_type[..]),
-            header.atom_size
-        );
+        println!("{:?}: {}", header.kind, header.size);
 
-        if let Err(e) = reader.seek_relative((header.atom_size - 8).into()) {
+        if let Err(e) = reader.seek_relative((header.size - 8).into()) {
             println!("error: {}", e);
             break;
         }
     }
-    
 }
